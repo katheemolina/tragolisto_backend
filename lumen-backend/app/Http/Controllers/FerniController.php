@@ -15,8 +15,7 @@ class FerniController extends Controller
     {
         $this->client = new Client();
         
-        // VER DE USAR env('GEMINI_API_KEY')
-        $this->apiKey = 'AIzaSyDiQgpkRXG2VwjQJPW1Lo8RqERX8gd1Stc';
+        $this->apiKey = env('GEMINI_API_KEY');
     }
 
     /**
