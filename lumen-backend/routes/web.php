@@ -21,3 +21,5 @@ $router->group(['prefix' => 'api/modofiesta'], function () use ($router) {
     $router->get('/', 'JuegoController@modoFiesta');
     $router->get('{id}', 'JuegoController@getJuegoPorID');
 });
+
+$router->post('/ferni', 'FerniController@responder');
