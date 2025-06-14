@@ -42,7 +42,8 @@ class TragosController extends Controller
         return response()->json([
             'error' => [
                 'code' => 5000,
-                'message' => 'Error interno del servidor'
+                'message' => 'Error interno del servidor' ,
+                $e
             ]
         ], 500);
     }

@@ -23,3 +23,6 @@ $router->group(['prefix' => 'api/modofiesta'], function () use ($router) {
 });
 
 $router->post('/ferni', 'FerniController@responder');
+
+
+$router->post('/login-google', 'LoginGoogleController@login');
