@@ -1,0 +1,110 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
+
+class UserController extends Controller
+{
+    public function verificarOnboarding(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'id_token' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => 'Datos inválidos',
+                'messages' => $validator->errors(),
+            ], 422);
+        }
+
+        $idToken = $request->input('id_token');
+
+        try {
+            $payload = $this->decodeIdToken($idToken);
+
+            $googleId = $payload['sub'] ?? null;
+
+            if (!$googleId) {
+                return response()->json(['error' => 'Token inválido, falta googleId'], 400);
+            }
+
+            $usuario = DB::table('usuarios')->where('google_id', $googleId)->first();
+
+            if ($usuario) {
+                return response()->json([
+                    'existe' => true,
+                    'id_usuario' => $usuario->id,
+                    'fecha_nacimiento' => $usuario->fecha_nacimiento, // puede ser null
+                    'requiere_onboarding' => is_null($usuario->fecha_nacimiento), // true si fecha_nac es null
+                ]);
+            } else {
+                return response()->json([
+                    'existe' => false,
+                    'id_usuario' => null,
+                    'fecha_nacimiento' => null,
+                    'requiere_onboarding' => true,  // usuario nuevo, requiere onboarding
+                ]);
+            }
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error procesando token: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    private function decodeIdToken(string $idToken): array
+    {
+        // Decodificar el payload JWT sin validar firma
+        $parts = explode('.', $idToken);
+        if (count($parts) !== 3) {
+            throw new \Exception('Formato de token inválido');
+        }
+
+        $payload = $parts[1];
+        $decoded = base64_decode(strtr($payload, '-_', '+/'));
+
+        if (!$decoded) {
+            throw new \Exception('No se pudo decodificar el token');
+        }
+
+        return json_decode($decoded, true);
+    }
+
+    public function completarOnboarding(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'id_token' => 'required|string',
+            'fecha_nacimiento' => 'required|date',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'error' => 'Datos inválidos',
+                'messages' => $validator->errors(),
+            ], 422);
+        }
+
+        try {
+            $payload = $this->decodeIdToken($request->input('id_token'));
+            $googleId = $payload['sub'] ?? null;
+
+            if (!$googleId) {
+                return response()->json(['error' => 'Token inválido'], 400);
+            }
+
+            DB::table('usuarios')
+                ->where('google_id', $googleId)
+                ->update(['fecha_nacimiento' => $request->input('fecha_nacimiento')]);
+
+            return response()->json(['success' => true]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error procesando token: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+}

@@ -26,3 +26,5 @@ $router->post('/ferni', 'FerniController@responder');
 
 
 $router->post('/login-google', 'LoginGoogleController@login');
+$router->post('/verificar-onboarding', 'UserController@verificarOnboarding');
+$router->post('/completar-onboarding', 'UserController@completarOnboarding');

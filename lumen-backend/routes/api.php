@@ -3,6 +3,7 @@
 use App\Http\Controllers\LoginGoogleController;
 use App\Http\Controllers\TragosController;
 use App\Http\Controllers\FerniController;
+use App\Http\Controllers\UserController;
 
 Route::post('/ferni', [FerniController::class, 'responder']);
 
@@ -11,3 +12,7 @@ Route::get('/tragos/{id}', [TragosController::class, 'getTragoPorID']);
 Route::get('/tragos', [TragosController::class, 'getTragosPorIngredientes']);
 
 Route::post('/login-google', [LoginGoogleController::class, 'login']);
+
+
+Route::post('/verificar-onboarding', [UserController::class, 'verificarOnboarding']);
+Route::post('/completar-onboarding', [UserController::class, 'completarOnboarding']);
