@@ -13,27 +13,35 @@ use App\Exceptions\Favoritos\EliminarFavoritoException;
 class FavoritoService
 {
     public function guardarFavorito($user_id, $trago_id)
-{
-    
-    // Evitar duplicados (por la UNIQUE)
-    $exists = Favorito::where('user_id', $user_id)
-                      ->where('trago_id', $trago_id)
-                      ->exists();
+    {
+        // Primero buscar si existe un favorito (incluyendo los eliminados)
+        $favoritoExistente = Favorito::withTrashed()
+            ->where('user_id', $user_id)
+            ->where('trago_id', $trago_id)
+            ->first();
 
-    if ($exists) {
-        throw new AgregarFavoritoException('Este trago ya está en favoritos.');
-    }
+        if ($favoritoExistente) {
+            if ($favoritoExistente->trashed()) {
+                // Si existe pero está eliminado, lo restauramos
+                $favoritoExistente->restore();
+                return ['status' => true, 'message' => 'Favorito restaurado correctamente'];
+            } else {
+                // Si existe y no está eliminado, lanzamos la excepción
+                throw new AgregarFavoritoException('Este trago ya está en favoritos.');
+            }
+        }
 
-    try {
-        Favorito::create([
-            'user_id' => $user_id,
-            'trago_id' => $trago_id,
-        ]);
-        return ['status' => true, 'message' => 'Guardado correctamente'];
-    } catch (\Exception $e) {
-        throw new AgregarFavoritoException();
+        try {
+            // Si no existe, creamos uno nuevo
+            Favorito::create([
+                'user_id' => $user_id,
+                'trago_id' => $trago_id,
+            ]);
+            return ['status' => true, 'message' => 'Guardado correctamente'];
+        } catch (\Exception $e) {
+            throw new AgregarFavoritoException();
+        }
     }
-}
 
 
     public function eliminarFavorito($favorito_id)
