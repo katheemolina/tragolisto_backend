@@ -4,6 +4,7 @@ use App\Http\Controllers\LoginGoogleController;
 use App\Http\Controllers\TragosController;
 use App\Http\Controllers\FerniController;
 use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Route;
 
 Route::post('/ferni', [FerniController::class, 'responder']);
 
