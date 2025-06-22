@@ -30,7 +30,7 @@ $router->group(['prefix' => 'api/modofiesta'], function () use ($router) {
     $router->get('{id}', 'JuegoController@getJuegoPorID');
 });
 
-$router->post('/ferni', 'FerniController@responder');
+// $router->post('/ferni', 'FerniController@responder');
 
 $router->post('/login-google', 'LoginGoogleController@login');
 $router->post('/verificar-onboarding', 'UserController@verificarOnboarding');

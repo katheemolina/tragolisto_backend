@@ -75,9 +75,36 @@ class FerniController extends Controller
                 }
             }
 
-            // Aquí puedes continuar con la llamada a Gemini o lo que desees hacer con $contents
+            // Preparar el payload para la API de Gemini
+            $payload = [
+                'contents' => $contents,
+                'generationConfig' => [
+                    'temperature' => 0.7,
+                    'candidateCount' => 1
+                ]
+            ];
+
+            // Hacer la llamada a la API de Gemini
+            $response = $this->client->post(
+                'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent',
+                [
+                    'query' => ['key' => $this->apiKey],
+                    'json' => $payload,
+                    'verify' => false
+                ]
+            );
+
+            $data = json_decode($response->getBody(), true);
+            $respuesta = $data['candidates'][0]['content']['parts'][0]['text'] ?? 'No logré entender bien tu solicitud.';
+
+            // Devolver la respuesta
+            return response()->json([
+                'success' => true,
+                'reply' => $respuesta
+            ]);
 
         } catch (\Exception $e) {
+            Log::error('Error en FerniController::old_responder: ' . $e->getMessage());
             return response()->json([
                 'error' => [
                     'code' => 500,
