@@ -6,7 +6,7 @@ use App\Http\Controllers\FerniController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
-Route::post('/ferni', [FerniController::class, 'responder']);
+Route::post('/ferni', [FerniController::class, 'old_responder']);
 
 Route::get('/tragos', [TragosController::class, 'getTragos']);
 Route::get('/tragos/{id}', [TragosController::class, 'getTragoPorID']);

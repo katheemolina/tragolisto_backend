@@ -5,7 +5,7 @@
 
 use Illuminate\Support\Facades\DB;
 
-$router->post('/ferni', 'FerniController@responder');
+$router->post('/ferni', 'FerniController@old_responder');
 
 $router->group(['prefix' => 'ferni'], function () use ($router) {
     $router->post('/new-chat', 'FerniController@newChat');
