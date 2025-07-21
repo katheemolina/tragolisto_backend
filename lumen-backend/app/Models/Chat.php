@@ -11,6 +11,7 @@ class Chat extends Model
 
     protected $fillable = [
         'user_id',
+        'title',
     ];
 
     public $timestamps = true; // Usa created_at y updated_at automáticamente

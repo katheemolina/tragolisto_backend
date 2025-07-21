@@ -16,7 +16,7 @@ class Message extends Model
         'is_deleted',
     ];
 
-    public $timestamps = ['created_at'];
+    public $timestamps = false;
 
     public function chat(): BelongsTo
     {

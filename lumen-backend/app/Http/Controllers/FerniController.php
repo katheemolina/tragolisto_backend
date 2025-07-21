@@ -162,25 +162,46 @@ class FerniController extends Controller
         $userId = $request->input('user_id');
         $mensaje = $request->input('message');
 
-        $chat = Chat::create(['user_id' => $userId]);
+        try {
+            $chat = Chat::create([
+                'user_id' => $userId,
+                'title' => 'Nuevo Chat'
+            ]);
 
-        Message::create([
-            'chat_id' => $chat->id,
-            'sender' => 'user',
-            'content' => $mensaje
-        ]);
+            Message::create([
+                'chat_id' => $chat->id,
+                'sender' => 'user',
+                'content' => $mensaje
+            ]);
 
-        $respuesta = $this->generarRespuesta([
-            ['role' => 'user', 'text' => $mensaje]
-        ]);
+            $tituloGenerado = $this->generarRespuesta([
+                [
+                    'role' => 'user',
+                    'text' => "Genera un título breve para este chat con base en el mensaje [SOLO RESPONDE CON EL CON UN TITULO EN TEXTO PLANO]: $mensaje"
+                ]
+            ]);
 
-        Message::create([
-            'chat_id' => $chat->id,
-            'sender' => 'bot',
-            'content' => $respuesta
-        ]);
+            $chat->update(['title' => $tituloGenerado]);
 
-        return response()->json(['chat_id' => $chat->id, 'reply' => $respuesta]);
+            $respuesta = $this->generarRespuesta([
+                ['role' => 'user', 'text' => $mensaje]
+            ]);
+
+            Message::create([
+                'chat_id' => $chat->id,
+                'sender' => 'bot',
+                'content' => $respuesta
+            ]);
+
+            return response()->json([
+                'chat_id' => $chat->id,
+                'reply' => $respuesta
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => 'Error al crear el chat: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     public function sendMessage(Request $request)
