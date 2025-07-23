@@ -28,6 +28,9 @@ $router->group(['prefix' => 'api/favoritos'], function () use ($router) {
 $router->group(['prefix' => 'api/modofiesta'], function () use ($router) {
     $router->get('/', 'JuegoController@modoFiesta');
     $router->get('{id}', 'JuegoController@getJuegoPorID');
+    $router->post('/', 'JuegoController@crearJuego');
+    $router->put('{id}', 'JuegoController@actualizarJuego');
+    $router->delete('{id}', 'JuegoController@eliminarJuego');
 });
 
 // $router->post('/ferni', 'FerniController@responder');
