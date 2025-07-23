@@ -17,6 +17,9 @@ $router->group(['prefix' => 'ferni'], function () use ($router) {
 $router->group(['prefix' => 'api/tragos'], function () use ($router) {
     $router->get('/', 'TragosController@getTragos');
     $router->get('{id}', 'TragosController@getTragoPorID');
+    $router->post('/', 'TragosController@crearTrago');
+    $router->put('{id}', 'TragosController@actualizarTrago');
+    $router->delete('{id}', 'TragosController@eliminarTrago');
 });
 
 $router->group(['prefix' => 'api/favoritos'], function () use ($router) {

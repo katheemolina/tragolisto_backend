@@ -71,4 +71,112 @@ public function getTragoPorID($id)
 }
 }
 
+public function crearTrago(Request $request)
+{
+    try {
+        $data = $request->only([
+            'nombre',
+            'descripcion',
+            'instrucciones',
+            'tips',
+            'historia',
+            'es_alcoholico',
+            'imagen_url',
+            'dificultad',
+            'tiempo_preparacion_minutos'
+        ]);
+        $this->tragosService->crearTrago($data);
+        return response()->json([
+            'message' => 'El trago fue agregado correctamente.'
+        ], 201);
+    } catch (\App\Exceptions\Tragos\CrearTragoException $e) {
+        return response()->json([
+            'error' => [
+                'code' => $e->getCodeError(),
+                'message' => $e->getMessage(),
+            ]
+        ], 400);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => [
+                'code' => 5000,
+                'message' => 'Error interno del servidor',
+            ]
+        ], 500);
+    }
+}
+
+public function actualizarTrago(Request $request, $id)
+{
+    try {
+        $data = $request->only([
+            'nombre',
+            'descripcion',
+            'instrucciones',
+            'tips',
+            'historia',
+            'es_alcoholico',
+            'imagen_url',
+            'dificultad',
+            'tiempo_preparacion_minutos'
+        ]);
+        $this->tragosService->actualizarTrago($id, array_filter($data, function($v) { return !is_null($v); }));
+        return response()->json([
+            'message' => 'El trago fue actualizado correctamente.'
+        ], 200);
+    } catch (\App\Exceptions\Tragos\TragoNoEncontradoException $e) {
+        return response()->json([
+            'error' => [
+                'code' => $e->getCodeError(),
+                'message' => $e->getMessage(),
+            ]
+        ], 404);
+    } catch (\App\Exceptions\Tragos\ActualizarTragoException $e) {
+        return response()->json([
+            'error' => [
+                'code' => $e->getCodeError(),
+                'message' => $e->getMessage(),
+            ]
+        ], 400);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => [
+                'code' => 5000,
+                'message' => 'Error interno del servidor',
+            ]
+        ], 500);
+    }
+}
+
+public function eliminarTrago($id)
+{
+    try {
+        $this->tragosService->eliminarTrago($id);
+        return response()->json([
+            'message' => 'El trago fue eliminado correctamente.'
+        ], 200);
+    } catch (\App\Exceptions\Tragos\TragoNoEncontradoException $e) {
+        return response()->json([
+            'error' => [
+                'code' => $e->getCodeError(),
+                'message' => $e->getMessage(),
+            ]
+        ], 404);
+    } catch (\App\Exceptions\Tragos\EliminarTragoException $e) {
+        return response()->json([
+            'error' => [
+                'code' => $e->getCodeError(),
+                'message' => $e->getMessage(),
+            ]
+        ], 400);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => [
+                'code' => 5000,
+                'message' => 'Error interno del servidor',
+            ]
+        ], 500);
+    }
+}
+
 }
