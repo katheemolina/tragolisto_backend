@@ -178,5 +178,4 @@ public function eliminarTrago($id)
         ], 500);
     }
 }
-
 }

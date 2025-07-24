@@ -22,6 +22,14 @@ $router->group(['prefix' => 'api/tragos'], function () use ($router) {
     $router->delete('{id}', 'TragosController@eliminarTrago');
 });
 
+$router->group(['prefix' => 'api/ingredientes'], function () use ($router) {
+    $router->get('/', 'IngredientesController@obtenerIngredientes');
+    $router->get('{id}', 'IngredientesController@obtenerIngredientePorId');
+    $router->post('/', 'IngredientesController@crearIngrediente');
+    $router->put('{id}', 'IngredientesController@actualizarIngrediente');
+    $router->delete('{id}', 'IngredientesController@eliminarIngrediente');
+});
+
 $router->group(['prefix' => 'api/favoritos'], function () use ($router) {
     $router->post('/', 'FavoritoController@guardar');
     $router->delete('{favorito_id}', 'FavoritoController@eliminar');
