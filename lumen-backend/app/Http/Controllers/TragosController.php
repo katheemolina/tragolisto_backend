@@ -182,7 +182,7 @@ public function eliminarTrago($id)
 public function obtenerTop3Favoritos()
 {
     try {
-        $topTragos = $this->tragosService->obtenerTop3TragosFavoritos();
+        $topTragos = $this->tragosService->obtenerTop5TragosFavoritos();
         return response()->json($topTragos, 200);
     } catch (\App\Exceptions\Tragos\TragosVaciosException $e) {
         return response()->json([

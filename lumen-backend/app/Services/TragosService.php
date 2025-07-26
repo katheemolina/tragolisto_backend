@@ -89,14 +89,14 @@ public function eliminarTrago($id)
     }
 }
 
-public function obtenerTop3TragosFavoritos()
+public function obtenerTop5TragosFavoritos()
 {
     $topTragos = Favorito::select('trago_id')
         ->selectRaw('COUNT(*) as total_favoritos')
         ->with('trago:id,nombre,descripcion')
         ->groupBy('trago_id')
         ->orderBy('total_favoritos', 'desc')
-        ->limit(3)
+        ->limit(5)
         ->get()
         ->map(function ($favorito) {
             return [

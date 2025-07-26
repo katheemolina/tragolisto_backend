@@ -56,3 +56,5 @@ $router->post('/login-google', 'LoginGoogleController@login');
 $router->post('/verificar-onboarding', 'UserController@verificarOnboarding');
 $router->post('/completar-onboarding', 'UserController@completarOnboarding');
 $router->get('/usuarios', 'UserController@obtenerUsuarios');
+
+$router->get('/api/indicadores', 'IndicadoresController@obtenerIndicadores');
