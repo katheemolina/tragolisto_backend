@@ -2,6 +2,7 @@
 namespace App\Services;
 
 use App\Models\Trago;
+use App\Models\Favorito;
 use App\Exceptions\Tragos\TragosVaciosException;
 use App\Exceptions\Tragos\TragosPorIngredientesException;
 use App\Exceptions\Tragos\TragoNoEncontradoException;
@@ -86,6 +87,31 @@ public function eliminarTrago($id)
     } catch (\Exception $e) {
         throw new \App\Exceptions\Tragos\EliminarTragoException('No se pudo eliminar el trago.');
     }
+}
+
+public function obtenerTop3TragosFavoritos()
+{
+    $topTragos = Favorito::select('trago_id')
+        ->selectRaw('COUNT(*) as total_favoritos')
+        ->with('trago:id,nombre,descripcion')
+        ->groupBy('trago_id')
+        ->orderBy('total_favoritos', 'desc')
+        ->limit(3)
+        ->get()
+        ->map(function ($favorito) {
+            return [
+                'trago_id' => $favorito->trago_id,
+                'nombre' => $favorito->trago->nombre,
+                'descripcion' => $favorito->trago->descripcion,
+                'total_favoritos' => $favorito->total_favoritos
+            ];
+        });
+
+    if ($topTragos->isEmpty()) {
+        throw new \App\Exceptions\Tragos\TragosVaciosException();
+    }
+
+    return $topTragos;
 }
 
 }

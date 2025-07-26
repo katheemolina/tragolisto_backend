@@ -5,9 +5,18 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use App\Services\UserService;
+use App\Exceptions\Usuarios\UsuariosNoDisponiblesException;
 
 class UserController extends Controller
 {
+    protected $userService;
+
+    public function __construct()
+    {
+        $this->userService = new UserService();
+    }
+
     public function verificarOnboarding(Request $request)
     {
         $validator = Validator::make($request->all(), [
@@ -104,6 +113,28 @@ class UserController extends Controller
         } catch (\Exception $e) {
             return response()->json([
                 'error' => 'Error procesando token: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function obtenerUsuarios()
+    {
+        try {
+            $usuarios = $this->userService->obtenerTodosLosUsuarios();
+            return response()->json($usuarios, 200);
+        } catch (UsuariosNoDisponiblesException $e) {
+            return response()->json([
+                'error' => [
+                    'code' => $e->getCodeError(),
+                    'message' => $e->getMessage(),
+                ]
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => [
+                    'code' => 5000,
+                    'message' => 'Error interno del servidor',
+                ]
             ], 500);
         }
     }

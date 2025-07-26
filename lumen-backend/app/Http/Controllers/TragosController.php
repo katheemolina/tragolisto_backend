@@ -178,4 +178,26 @@ public function eliminarTrago($id)
         ], 500);
     }
 }
+
+public function obtenerTop3Favoritos()
+{
+    try {
+        $topTragos = $this->tragosService->obtenerTop3TragosFavoritos();
+        return response()->json($topTragos, 200);
+    } catch (\App\Exceptions\Tragos\TragosVaciosException $e) {
+        return response()->json([
+            'error' => [
+                'code' => $e->getCodeError(),
+                'message' => $e->getMessage(),
+            ]
+        ], 404);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => [
+                'code' => 5000,
+                'message' => 'Error interno del servidor',
+            ]
+        ], 500);
+    }
+}
 }
