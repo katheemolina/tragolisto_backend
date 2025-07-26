@@ -8,9 +8,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::post('/ferni', [FerniController::class, 'old_responder']);
 
-Route::get('/tragos', [TragosController::class, 'getTragos']);
-Route::get('/tragos/{id}', [TragosController::class, 'getTragoPorID']);
-Route::get('/tragos', [TragosController::class, 'getTragosPorIngredientes']);
+// Las rutas de tragos están definidas en web.php para mantener consistencia con Lumen
 
 Route::post('/login-google', [LoginGoogleController::class, 'login']);
 

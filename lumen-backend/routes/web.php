@@ -5,6 +5,10 @@
 
 use Illuminate\Support\Facades\DB;
 
+$router->options('{any:.*}', function() {
+    return response('', 200);
+});
+
 $router->post('/ferni', 'FerniController@old_responder');
 
 $router->group(['prefix' => 'ferni'], function () use ($router) {
@@ -21,6 +25,8 @@ $router->group(['prefix' => 'api/tragos'], function () use ($router) {
     $router->put('{id}', 'TragosController@actualizarTrago');
     $router->delete('{id}', 'TragosController@eliminarTrago');
 });
+
+$router->get('/api/toptragos', 'TragosController@obtenerTop3Favoritos');
 
 $router->group(['prefix' => 'api/ingredientes'], function () use ($router) {
     $router->get('/', 'IngredientesController@obtenerIngredientes');
@@ -49,3 +55,4 @@ $router->group(['prefix' => 'api/modofiesta'], function () use ($router) {
 $router->post('/login-google', 'LoginGoogleController@login');
 $router->post('/verificar-onboarding', 'UserController@verificarOnboarding');
 $router->post('/completar-onboarding', 'UserController@completarOnboarding');
+$router->get('/usuarios', 'UserController@obtenerUsuarios');
