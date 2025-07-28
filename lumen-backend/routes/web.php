@@ -9,14 +9,13 @@ $router->options('{any:.*}', function() {
     return response('', 200);
 });
 
-$router->post('/ferni', 'FerniController@old_responder');
-
 $router->group(['prefix' => 'ferni'], function () use ($router) {
-    $router->post('/new-chat', 'FerniController@newChat');
-    $router->post('/send-message', 'FerniController@sendMessage');
+    $router->post('/new-chat', 'FerniController@handleChat');
+    $router->post('/send-message', 'FerniController@handleChat');
     $router->get('/chats/{userId}', 'FerniController@getChats');
     $router->get('/messages/{chatId}', 'FerniController@getMessages');
 });
+
 
 $router->group(['prefix' => 'api/tragos'], function () use ($router) {
     $router->get('/', 'TragosController@getTragos');
