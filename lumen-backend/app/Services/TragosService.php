@@ -10,32 +10,41 @@ use App\Exceptions\Tragos\TragoNoEncontradoException;
 
 class TragosService
 {
-    public function getAllTragos()
-{
-    $tragos = Trago::all();
-    
-    if ($tragos->isEmpty()) {
-        throw new TragosVaciosException();
+    public function getAllTragos(bool $esMenor = false)
+    {
+        $query = Trago::query();
+
+        if ($esMenor) {
+            $query->where('es_alcoholico', false);
+        }
+
+        $tragos = $query->get();
+
+        if ($tragos->isEmpty()) {
+            throw new TragosVaciosException();
+        }
+
+        return ['tragos' => $tragos];
     }
 
-    return [
-        'total' => $tragos->count(),
-        'tragos' => $tragos
-    ];
-}
+    public function getTragosPorIngredientes(array $ingredientes, bool $esMenor = false)
+    {
+        $query = Trago::whereHas('ingredientes', function ($q) use ($ingredientes) {
+            $q->whereIn('nombre', $ingredientes);
+        });
 
-public function getTragosPorIngredientes(array $ingredientes)
-{
-    $tragos = Trago::whereHas('ingredientes', function ($query) use ($ingredientes) {
-        $query->whereIn('nombre', $ingredientes);
-    }, '=', count($ingredientes))->get();
+        if ($esMenor) {
+            $query->where('es_alcoholico', false);
+        }
 
-    if ($tragos->isEmpty()) {
-        throw new TragosPorIngredientesException();
+        $tragos = $query->get();
+
+        if ($tragos->isEmpty()) {
+            throw new TragosPorIngredientesException();
+        }
+
+        return $tragos;
     }
-
-    return $tragos;
-}
 
 public function getTragoPorID(int $id)
 {

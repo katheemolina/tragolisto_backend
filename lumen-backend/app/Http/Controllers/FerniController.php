@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Chat;
 use App\Models\Message;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Log;
@@ -228,8 +230,7 @@ NO uses el formato JSON para recetas normales, solo para cuando quieran guardar 
         return $data['candidates'][0]['content']['parts'][0]['text'] ?? 'No logré entender bien tu solicitud.';
     }
 
-    public function handleChat(Request $request)
-    {
+    public function handleChat(Request $request) {
         $userId = $request->input('user_id');
         $chatId = $request->input('chat_id'); // opcional
         $mensajes = $request->input('messages'); // array de mensajes nuevos
@@ -239,6 +240,19 @@ NO uses el formato JSON para recetas normales, solo para cuando quieran guardar 
         }
 
         try {
+            // Verificar si el usuario es mayor de edad
+            $isAdult = true;
+
+            try {
+                $usuario = User::find($userId);
+                if ($usuario && $usuario->fecha_nacimiento) {
+                    $edad = Carbon::parse($usuario->fecha_nacimiento)->age;
+                    $isAdult = $edad >= 18;
+                }
+            } catch (\Exception $e) {
+                Log::warning("No se pudo calcular edad del usuario $userId: " . $e->getMessage());
+            }
+
             // Crear nuevo chat si no existe
             if (!$chatId) {
                 $chat = Chat::create([
@@ -288,8 +302,19 @@ NO uses el formato JSON para recetas normales, solo para cuando quieran guardar 
                 ])
                 ->toArray();
 
+            $mensajeEdad = $isAdult
+                ? "Importante: El usuario es mayor de edad, puedes sugerirle tragos con alcohol."
+                : "Importante: El usuario es menor de edad, NO le sugieras tragos con alcohol.";
+
+            array_unshift($historial, [
+                'role' => 'user',
+                'text' => $mensajeEdad
+            ]);
+
+            // Obtener respuesta del modelo
             $respuesta = $this->generarRespuesta($historial);
 
+            // Guardar la respuesta en la base de datos
             Message::create([
                 'chat_id' => $chatId,
                 'sender' => 'bot',

@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers;
 
+use App\Models\User;
 use App\Services\TragosService;
 use Illuminate\Http\Request;
 use App\Exceptions\Tragos\TragosVaciosException;
@@ -18,36 +19,47 @@ class TragosController extends Controller
     }
 
     // GET /api/tragos
-   public function getTragos(Request $request)
-{
-    try {
-        $ingredientes = $request->query('ingredientes');
+    public function getTragos(Request $request)
+    {
+        try {
+            $ingredientes = $request->query('ingredientes');
+            $userId = $request->query('user_id');
 
-        if ($ingredientes) {
-            $ingredientesArray = explode(',', $ingredientes);
-            $tragos = $this->tragosService->getTragosPorIngredientes($ingredientesArray);
-            return response()->json(['tragos' => $tragos], 200);
-        } else {
-            $resultado = $this->tragosService->getAllTragos();
-            return response()->json($resultado, 200);
+            $esMenor = false;
+            if ($userId) {
+                $usuario = User::find($userId);
+                if ($usuario && $usuario->fecha_nacimiento) {
+                    $edad = \Carbon\Carbon::parse($usuario->fecha_nacimiento)->age;
+                    $esMenor = $edad < 18;
+                }
+            }
+
+            if ($ingredientes) {
+                $ingredientesArray = explode(',', $ingredientes);
+                $tragos = $this->tragosService->getTragosPorIngredientes($ingredientesArray, $esMenor);
+                return response()->json(['tragos' => $tragos], 200);
+            } else {
+                $resultado = $this->tragosService->getAllTragos($esMenor); // 🔁 Cambiado aquí
+                return response()->json($resultado, 200);
+            }
+        } catch (TragosVaciosException | TragosPorIngredientesException $e) {
+            return response()->json([
+                'error' => [
+                    'code' => $e->getCodeError(),
+                    'message' => $e->getMessage(),
+                ]
+            ], 404);
+        } catch (\Exception $e) {
+            return response()->json([
+                'error' => [
+                    'code' => 5000,
+                    'message' => 'Error interno del servidor',
+                    'details' => $e->getMessage()
+                ]
+            ], 500);
         }
-    } catch (TragosVaciosException | TragosPorIngredientesException $e) {
-        return response()->json([
-        'error' => [
-            'code' => $e->getCodeError(),
-            'message' => $e->getMessage(),
-        ]
-    ], 404);
-    } catch (\Exception $e) {
-        return response()->json([
-            'error' => [
-                'code' => 5000,
-                'message' => 'Error interno del servidor' ,
-                $e
-            ]
-        ], 500);
     }
-}
+
 
 public function getTragoPorID($id)
 {
