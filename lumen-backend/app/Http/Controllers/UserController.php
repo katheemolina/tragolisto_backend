@@ -44,18 +44,18 @@ class UserController extends Controller
             $usuario = DB::table('usuarios')->where('google_id', $googleId)->first();
 
             if ($usuario) {
+                // Calcular si es mayor de edad solo si tiene fecha_nacimiento
+                $esMayor = false;
+                if (!is_null($usuario->fecha_nacimiento)) {
+                    $esMayor = \Carbon\Carbon::parse($usuario->fecha_nacimiento)->age >= 18;
+                }
+
                 return response()->json([
                     'existe' => true,
                     'id_usuario' => $usuario->id,
                     'fecha_nacimiento' => $usuario->fecha_nacimiento, // puede ser null
-                    'requiere_onboarding' => is_null($usuario->fecha_nacimiento), // true si fecha_nac es null
-                ]);
-            } else {
-                return response()->json([
-                    'existe' => false,
-                    'id_usuario' => null,
-                    'fecha_nacimiento' => null,
-                    'requiere_onboarding' => true,  // usuario nuevo, requiere onboarding
+                    'requiere_onboarding' => is_null($usuario->fecha_nacimiento),
+                    'es_mayor' => $esMayor,
                 ]);
             }
         } catch (\Exception $e) {
