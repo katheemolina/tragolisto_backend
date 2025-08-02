@@ -2,25 +2,25 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Services\JuegoService;
-use App\Exceptions\Juegos\JuegosNoDisponiblesException;
-use App\Exceptions\Juegos\JuegoNoEncontradoException;
+use App\Services\IngredientesService;
+use App\Exceptions\Ingredientes\IngredientesNoDisponiblesException;
+use App\Exceptions\Ingredientes\IngredienteNoEncontradoException;
 
-class JuegoController extends Controller
+class IngredientesController extends Controller
 {
-    protected $juegoService;
+    protected $ingredientesService;
 
     public function __construct()
     {
-        $this->juegoService = new JuegoService();
+        $this->ingredientesService = new IngredientesService();
     }
 
-    public function modoFiesta()
+    public function obtenerIngredientes()
     {
         try {
-            $juegos = $this->juegoService->obtenerTodosLosJuegos();
-            return response()->json($juegos, 200);
-        } catch (JuegosNoDisponiblesException $e) {
+            $ingredientes = $this->ingredientesService->obtenerTodosLosIngredientes();
+            return response()->json($ingredientes, 200);
+        } catch (IngredientesNoDisponiblesException $e) {
             return response()->json([
                 'error' => [
                     'code' => $e->getCodeError(),
@@ -37,12 +37,12 @@ class JuegoController extends Controller
         }
     }
 
-    public function getJuegoPorID($id)
+    public function obtenerIngredientePorId($id)
     {
         try {
-            $juego = $this->juegoService->obtenerJuegoPorId($id);
-            return response()->json($juego, 200);
-        } catch (JuegoNoEncontradoException $e) {
+            $ingrediente = $this->ingredientesService->obtenerIngredientePorId($id);
+            return response()->json($ingrediente, 200);
+        } catch (IngredienteNoEncontradoException $e) {
             return response()->json([
                 'error' => [
                     'code' => $e->getCodeError(),
@@ -59,23 +59,19 @@ class JuegoController extends Controller
         }
     }
 
-    public function crearJuego(Request $request)
+    public function crearIngrediente(Request $request)
     {
         try {
             $data = $request->only([
                 'nombre',
-                'descripcion',
-                'categoria',
-                'materiales',
-                'min_jugadores',
-                'max_jugadores',
-                'es_para_beber',
+                'es_alcohol',
+                'categoria'
             ]);
-            $this->juegoService->crearJuego($data);
+            $this->ingredientesService->crearIngrediente($data);
             return response()->json([
-                'message' => 'El juego fue agregado correctamente.'
+                'message' => 'El ingrediente fue agregado correctamente.'
             ], 201);
-        } catch (\App\Exceptions\Juegos\CrearJuegoException $e) {
+        } catch (\App\Exceptions\Ingredientes\CrearIngredienteException $e) {
             return response()->json([
                 'error' => [
                     'code' => $e->getCodeError(),
@@ -92,30 +88,26 @@ class JuegoController extends Controller
         }
     }
 
-    public function actualizarJuego(Request $request, $id)
+    public function actualizarIngrediente(Request $request, $id)
     {
         try {
             $data = $request->only([
                 'nombre',
-                'descripcion',
-                'categoria',
-                'materiales',
-                'min_jugadores',
-                'max_jugadores',
-                'es_para_beber',
+                'es_alcohol',
+                'categoria'
             ]);
-            $this->juegoService->actualizarJuego($id, array_filter($data, function($v) { return !is_null($v); }));
+            $this->ingredientesService->actualizarIngrediente($id, array_filter($data, function($v) { return !is_null($v); }));
             return response()->json([
-                'message' => 'El juego fue actualizado correctamente.'
+                'message' => 'El ingrediente fue actualizado correctamente.'
             ], 200);
-        } catch (\App\Exceptions\Juegos\JuegoNoEncontradoException $e) {
+        } catch (IngredienteNoEncontradoException $e) {
             return response()->json([
                 'error' => [
                     'code' => $e->getCodeError(),
                     'message' => $e->getMessage(),
                 ]
             ], 404);
-        } catch (\App\Exceptions\Juegos\ActualizarJuegoException $e) {
+        } catch (\App\Exceptions\Ingredientes\ActualizarIngredienteException $e) {
             return response()->json([
                 'error' => [
                     'code' => $e->getCodeError(),
@@ -132,21 +124,21 @@ class JuegoController extends Controller
         }
     }
 
-    public function eliminarJuego($id)
+    public function eliminarIngrediente($id)
     {
         try {
-            $this->juegoService->eliminarJuego($id);
+            $this->ingredientesService->eliminarIngrediente($id);
             return response()->json([
-                'message' => 'El juego fue eliminado correctamente.'
+                'message' => 'El ingrediente fue eliminado correctamente.'
             ], 200);
-        } catch (\App\Exceptions\Juegos\JuegoNoEncontradoException $e) {
+        } catch (IngredienteNoEncontradoException $e) {
             return response()->json([
                 'error' => [
                     'code' => $e->getCodeError(),
                     'message' => $e->getMessage(),
                 ]
             ], 404);
-        } catch (\App\Exceptions\Juegos\EliminarJuegoException $e) {
+        } catch (\App\Exceptions\Ingredientes\EliminarIngredienteException $e) {
             return response()->json([
                 'error' => [
                     'code' => $e->getCodeError(),
@@ -162,4 +154,4 @@ class JuegoController extends Controller
             ], 500);
         }
     }
-}
+} 

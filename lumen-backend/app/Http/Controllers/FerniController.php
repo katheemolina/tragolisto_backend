@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Chat;
 use App\Models\Message;
+use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use GuzzleHttp\Client;
 use Illuminate\Support\Facades\Log;
@@ -116,7 +118,7 @@ NO uses el formato JSON para recetas normales, solo para cuando quieran guardar 
             $ultimoMensaje = $historial[count($historial) - 1]['text'] ?? '';
             $palabrasClaveGuardar = ['guardar', 'guardado', 'guardar la receta', 'guardar el trago', 'guardar esta receta', 'guardar esta bebida', 'guardar en mis creaciones', 'guardar en mi lista', 'agregar a mis recetas', 'agregar a mi lista'];
             $esSolicitudGuardar = false;
-            
+
             foreach ($palabrasClaveGuardar as $palabra) {
                 if (stripos($ultimoMensaje, $palabra) !== false) {
                     $esSolicitudGuardar = true;
@@ -130,7 +132,7 @@ NO uses el formato JSON para recetas normales, solo para cuando quieran guardar 
                     'mensaje_usuario' => $ultimoMensaje,
                     'respuesta_original' => $respuesta
                 ]);
-                
+
                 // Intentar extraer información de la respuesta y reformatear
                 $respuesta = $this->reformatearReceta($respuesta);
             }
@@ -228,81 +230,107 @@ NO uses el formato JSON para recetas normales, solo para cuando quieran guardar 
         return $data['candidates'][0]['content']['parts'][0]['text'] ?? 'No logré entender bien tu solicitud.';
     }
 
-    public function newChat(Request $request)
-    {
+    public function handleChat(Request $request) {
         $userId = $request->input('user_id');
-        $mensaje = $request->input('message');
+        $chatId = $request->input('chat_id'); // opcional
+        $mensajes = $request->input('messages'); // array de mensajes nuevos
+
+        if (!is_array($mensajes) || empty($mensajes)) {
+            return response()->json(['error' => 'No se proporcionaron mensajes válidos'], 400);
+        }
 
         try {
-            $chat = Chat::create([
-                'user_id' => $userId,
-                'title' => 'Nuevo Chat'
+            // Verificar si el usuario es mayor de edad
+            $isAdult = true;
+
+            try {
+                $usuario = User::find($userId);
+                if ($usuario && $usuario->fecha_nacimiento) {
+                    $edad = Carbon::parse($usuario->fecha_nacimiento)->age;
+                    $isAdult = $edad >= 18;
+                }
+            } catch (\Exception $e) {
+                Log::warning("No se pudo calcular edad del usuario $userId: " . $e->getMessage());
+            }
+
+            // Crear nuevo chat si no existe
+            if (!$chatId) {
+                $chat = Chat::create([
+                    'user_id' => $userId,
+                    'title' => 'Nuevo Chat'
+                ]);
+                $chatId = $chat->id;
+
+                $primerMensaje = $mensajes[0]['text'] ?? '';
+
+                Message::create([
+                    'chat_id' => $chatId,
+                    'sender' => 'user',
+                    'content' => $primerMensaje
+                ]);
+
+                // Título generado
+                $tituloGenerado = $this->generarRespuesta([
+                    ['role' => 'user', 'text' => "Genera un título breve para este chat con base en el mensaje [SOLO RESPONDE CON UN TÍTULO EN TEXTO PLANO]: $primerMensaje"]
+                ]);
+
+                $chat->update(['title' => $tituloGenerado]);
+
+            } else {
+                // Chat ya existe
+                $chat = Chat::findOrFail($chatId);
+
+                // Insertar nuevos mensajes del usuario (normalmente solo uno)
+                foreach ($mensajes as $msg) {
+                    if ($msg['role'] === 'user') {
+                        Message::create([
+                            'chat_id' => $chatId,
+                            'sender' => 'user',
+                            'content' => $msg['text']
+                        ]);
+                    }
+                }
+            }
+
+            // Obtener historial completo desde la base de datos
+            $historial = Message::where('chat_id', $chatId)
+                ->orderBy('created_at')
+                ->get()
+                ->map(fn($msg) => [
+                    'role' => $msg->sender === 'bot' ? 'assistant' : 'user',
+                    'text' => $msg->content
+                ])
+                ->toArray();
+
+            $mensajeEdad = $isAdult
+                ? "Importante: El usuario es mayor de edad, puedes sugerirle tragos con alcohol."
+                : "Importante: El usuario es menor de edad, NO le sugieras tragos con alcohol.";
+
+            array_unshift($historial, [
+                'role' => 'user',
+                'text' => $mensajeEdad
             ]);
 
+            // Obtener respuesta del modelo
+            $respuesta = $this->generarRespuesta($historial);
+
+            // Guardar la respuesta en la base de datos
             Message::create([
-                'chat_id' => $chat->id,
-                'sender' => 'user',
-                'content' => $mensaje
-            ]);
-
-            $tituloGenerado = $this->generarRespuesta([
-                [
-                    'role' => 'user',
-                    'text' => "Genera un título breve para este chat con base en el mensaje [SOLO RESPONDE CON EL CON UN TITULO EN TEXTO PLANO]: $mensaje"
-                ]
-            ]);
-
-            $chat->update(['title' => $tituloGenerado]);
-
-            $respuesta = $this->generarRespuesta([
-                ['role' => 'user', 'text' => $mensaje]
-            ]);
-
-            Message::create([
-                'chat_id' => $chat->id,
+                'chat_id' => $chatId,
                 'sender' => 'bot',
                 'content' => $respuesta
             ]);
 
             return response()->json([
-                'chat_id' => $chat->id,
+                'chat_id' => $chatId,
                 'reply' => $respuesta
             ]);
+
         } catch (\Exception $e) {
             return response()->json([
-                'error' => 'Error al crear el chat: ' . $e->getMessage()
+                'error' => 'Error en el manejo del chat: ' . $e->getMessage()
             ], 500);
         }
-    }
-
-    public function sendMessage(Request $request)
-    {
-        $chatId = $request->input('chat_id');
-        $mensaje = $request->input('message');
-
-        $chat = Chat::findOrFail($chatId);
-        Message::create([
-            'chat_id' => $chat->id,
-            'sender' => 'user',
-            'content' => $mensaje
-        ]);
-
-        // Obtener historial
-        $historial = $chat->messages()
-            ->orderBy('created_at')
-            ->get()
-            ->map(fn($msg) => ['role' => $msg->sender === 'bot' ? 'assistant' : 'user', 'text' => $msg->content])
-            ->toArray();
-
-        $respuesta = $this->generarRespuesta($historial);
-
-        Message::create([
-            'chat_id' => $chat->id,
-            'sender' => 'bot',
-            'content' => $respuesta
-        ]);
-
-        return response()->json(['reply' => $respuesta]);
     }
 
     public function getChats($userId)
@@ -329,11 +357,11 @@ NO uses el formato JSON para recetas normales, solo para cuando quieran guardar 
         // Extraer nombre del trago (buscar después de "**" o en títulos)
         preg_match('/\*\*(.*?)\*\*/', $respuesta, $matches);
         $nombre = $matches[1] ?? 'Trago';
-        
+
         // Extraer ingredientes (buscar después de "**Ingredientes:**")
         preg_match('/\*\*Ingredientes:\*\*(.*?)(?:\*\*|$)/s', $respuesta, $matches);
         $ingredientesTexto = $matches[1] ?? '';
-        
+
         // Convertir ingredientes a array
         $ingredientes = [];
         $lineas = explode("\n", $ingredientesTexto);
@@ -348,23 +376,23 @@ NO uses el formato JSON para recetas normales, solo para cuando quieran guardar 
                 }
             }
         }
-        
+
         // Si no se encontraron ingredientes, crear uno genérico
         if (empty($ingredientes)) {
             $ingredientes = ["Ingredientes del $nombre"];
         }
-        
+
         // Extraer pasos de preparación
         preg_match('/\*\*Preparación:\*\*(.*?)(?:\*\*|$)/s', $respuesta, $matches);
         $pasosTexto = $matches[1] ?? '';
-        
+
         // Extraer tips o consejos
         preg_match('/\*\*Tips?.*?:\*\*(.*?)(?:\*\*|$)/s', $respuesta, $matches);
         $tipsTexto = $matches[1] ?? '';
-        
+
         // Crear descripción detallada
         $descripcion = "Receta de $nombre preparada por Ferni. ";
-        
+
         // Agregar información sobre el tipo de bebida
         if (stripos($respuesta, 'cóctel') !== false) {
             $descripcion .= "Es un cóctel ";
@@ -373,7 +401,7 @@ NO uses el formato JSON para recetas normales, solo para cuando quieran guardar 
         } else {
             $descripcion .= "Es una bebida ";
         }
-        
+
         // Agregar características
         $caracteristicas = [];
         if (stripos($respuesta, 'refrescante') !== false) $caracteristicas[] = 'refrescante';
@@ -382,11 +410,11 @@ NO uses el formato JSON para recetas normales, solo para cuando quieran guardar 
         if (stripos($respuesta, 'clásico') !== false) $caracteristicas[] = 'clásico';
         if (stripos($respuesta, 'tradicional') !== false) $caracteristicas[] = 'tradicional';
         if (stripos($respuesta, 'popular') !== false) $caracteristicas[] = 'popular';
-        
+
         if (!empty($caracteristicas)) {
             $descripcion .= implode(', ', $caracteristicas) . ". ";
         }
-        
+
         // Agregar pasos de preparación específicos
         if (!empty($pasosTexto)) {
             // Limpiar y formatear los pasos
@@ -403,12 +431,12 @@ NO uses el formato JSON para recetas normales, solo para cuando quieran guardar 
                     }
                 }
             }
-            
+
             if (!empty($pasos)) {
                 $descripcion .= "Pasos: " . implode('. ', $pasos) . ". ";
             }
         }
-        
+
         // Agregar tips si existen
         if (!empty($tipsTexto)) {
             // Limpiar y formatear los tips
@@ -424,15 +452,15 @@ NO uses el formato JSON para recetas normales, solo para cuando quieran guardar 
                     }
                 }
             }
-            
+
             if (!empty($tips)) {
                 $descripcion .= "Consejos: " . implode('. ', $tips) . ".";
             }
         }
-        
+
         // Limpiar la descripción
         $descripcion = trim($descripcion);
-        
+
         return json_encode([
             'type' => 'recipe',
             'data' => [
