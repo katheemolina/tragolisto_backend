@@ -13,6 +13,7 @@ class Juego extends Model
     protected $fillable = [
         'nombre',
         'descripcion',
+        'video',        // <-- agregá esta línea
         'categoria',
         'materiales',
         'min_jugadores',
